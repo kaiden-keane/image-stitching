@@ -51,7 +51,7 @@ class ImageMatcher():
         self._get_offset()
 
     def _get_top_features(self, matches):
-        assert self.match_count < len(matches)
+        assert self.match_count <= len(matches)
         top_arr = []
         for i in range(self.match_count):
             lowest_val = matches[i]
@@ -120,20 +120,22 @@ class Stitcher():
         cv.waitKey(0)
     
     def save_output(self):
-        cv.imwrite("output.ing", self.blank_image)
+        cv.imwrite("output.png", self.blank_image)
 
 
 if __name__ == "__main__":
     matcher = ImageMatcher()
 
-    img1 = BaseImage(os.path.join("sample_images", "left.png")) # queryImage / base image
-    img2 = BaseImage(os.path.join("sample_images", "right.png")) # trainImage / translated image
+    img1 = BaseImage(os.path.join("sample_images", "t1.png")) # queryImage / base image
+    img2 = BaseImage(os.path.join("sample_images", "t2.png")) # trainImage / translated image
 
     img1.get_features(matcher.orb)
     img2.get_features(matcher.orb)
 
-    matcher.get_matches(img1, img2, 10)
+    matcher.get_matches(img1, img2)
+    for i in matcher.top_matches:
+        print(i.distance)
     stitcher = Stitcher(matcher)
     stitcher.stitch()
     # stitcher.show_output()
-    # stitcher.save_output()
+    stitcher.save_output()
