@@ -3,7 +3,11 @@ import numpy as np
 import math
 import os
 
+
 class Vec2d():
+    """
+    simple x, y vector
+    """
     def __init__(self, x:int=0 , y:int=0):
         self.x = x
         self.y = y
@@ -16,9 +20,15 @@ class Vec2d():
 
 
 class BaseImage():
-
-    def __init__(self, filename):
-        self.image = cv.imread(filename)
+    """
+    contains the data pertaining to one image
+    key points, features, size, etc
+    """
+    def __init__(self, filename): 
+        if (os.path.exists(filename)):
+            self.image = cv.imread(filename)
+        else:
+            raise FileNotFoundError
         self.offset = Vec2d()
         self.kp = []
         self.des = []
@@ -29,7 +39,10 @@ class BaseImage():
 
 
 class ImageMatcher():
-
+    """
+    contains instance of ORB and matches two images
+    calculates translation and offset required to properly overlay images
+    """
     def __init__(self) -> None:
         self.orb = cv.ORB_create()
 
@@ -68,6 +81,7 @@ class ImageMatcher():
         input: a list of cv.DMatch
         returns a tuple, (x, y) q2for translation that needs to occure to overlay the image
         """
+        assert self.match_count > 0, "ImageMatcher.match_count <= 0"
         translation = Vec2d()
         amnt = 0
         for match in self.top_matches:
@@ -98,6 +112,9 @@ class ImageMatcher():
 
 
 class Stitcher():
+    """
+    currently just overlays two images but will make it more convenient to match bulk images
+    """
     def __init__(self, matcher) -> None:
         self.matcher = matcher
         img1 = matcher.img1.image
@@ -126,15 +143,14 @@ class Stitcher():
 if __name__ == "__main__":
     matcher = ImageMatcher()
 
-    img1 = BaseImage(os.path.join("sample_images", "t1.png")) # queryImage / base image
-    img2 = BaseImage(os.path.join("sample_images", "t2.png")) # trainImage / translated image
+    img1 = BaseImage(os.path.join("sample_images", "img1.png")) # queryImage / base image
+    img2 = BaseImage(os.path.join("sample_images", "img2.png")) # trainImage / translated image
 
     img1.get_features(matcher.orb)
     img2.get_features(matcher.orb)
 
     matcher.get_matches(img1, img2)
-    for i in matcher.top_matches:
-        print(i.distance)
+    
     stitcher = Stitcher(matcher)
     stitcher.stitch()
     # stitcher.show_output()
