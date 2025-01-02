@@ -1,5 +1,4 @@
 import cv2 as cv
-import numpy as np
 import os
 
 images_dir = "sample_images"
@@ -26,18 +25,17 @@ def load_cv_imgs():
     return imgs
 
 
-def simple_stitch():
-    imgs = load_cv_imgs()
-    
-    # stitch images
-    stitcher = cv.Stitcher.create(cv.STITCHER_SCANS)
-    status, pano = stitcher.stitch(imgs)
+imgs = load_cv_imgs()
 
-    if status != cv.Stitcher_OK:
-        print("Can't stitch images, error code = %d" % status)
-    else:
-        outputName = os.path.join(output_dir, output_name)
-        cv.imwrite(outputName, pano)
-        print("stitching completed successfully. %s saved!" % outputName)
- 
-    print('Done')
+# stitch images
+stitcher = cv.Stitcher.create(cv.STITCHER_SCANS)
+status, pano = stitcher.stitch(imgs)
+
+if status != cv.Stitcher_OK:
+    print("Can't stitch images, error code = %d" % status)
+else:
+    outputName = os.path.join(output_dir, output_name)
+    cv.imwrite(outputName, pano)
+    print("stitching completed successfully. %s saved!" % outputName)
+
+print('Done')
