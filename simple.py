@@ -1,5 +1,6 @@
 import cv2 as cv
 import os
+import time
 
 images_dir = "sample_images"
 output_dir = "result_images"
@@ -8,15 +9,18 @@ output_name = "result.png"
 def load_cv_imgs():
     # get all file names from sample images directory
     fileNames = os.listdir(images_dir)
-    files = []
+    
+    # files <= only valid files + full path
     for name in fileNames:
-        if name.endswith(".jpg"):
-            files.append(os.path.join(images_dir, name))
-    files.sort()
+        if not name.endswith(".jpg") and not name.split(".")[0].isdigit():
+            fileNames.remove(name)
+    fileNames.sort(key = lambda x: int(x.split(".")[0])) # sort based on numerical order
+
+    fileNames = [ os.path.join(images_dir, x) for x in fileNames]
     
     # load images
     imgs = []
-    for img_name in  files:
+    for img_name in  fileNames:
         img = cv.imread(img_name)
         if img is None:
             print("could not read image " + img_name)
@@ -24,7 +28,7 @@ def load_cv_imgs():
             imgs.append(img)
     return imgs
 
-
+start = time.perf_counter()
 imgs = load_cv_imgs()
 
 # stitch images
@@ -39,3 +43,5 @@ else:
     print("stitching completed successfully. %s saved!" % outputName)
 
 print('Done')
+end = time.perf_counter()
+print(f"total time = {end - start}")

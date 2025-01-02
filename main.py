@@ -1,12 +1,13 @@
 import cv2 as cv
 import numpy as np
+import os
+import time
 
 #----------------------------------------------------------
 # based on stitching_detailed found below:
 # https://docs.opencv.org/4.x/d8/d19/tutorial_stitcher.html
 #----------------------------------------------------------
 
-import os
 
 images_dir = "sample_images"
 output_dir = "result_images"
@@ -15,14 +16,16 @@ output_name = "result.png"
 def get_image_names():
     # get all file names from sample images directory
     fileNames = os.listdir(images_dir)
-    fileNames.sort(key = lambda x: int(x.split("."[0]))) # sort based on numerical order
-    files = []
+    
+    # files <= only valid files + full path
     for name in fileNames:
-        if name.endswith(".jpg") and name.split(".")[0].isdigit():
-            files.append(os.path.join(images_dir, name))
+        if not name.endswith(".jpg") and not name.split(".")[0].isdigit():
+            fileNames.remove(name)
+    fileNames.sort(key = lambda x: int(x.split(".")[0])) # sort based on numerical order
 
-    return files
+    fileNames = [ os.path.join(images_dir, x) for x in fileNames]
 
+    return fileNames
 
 def semi_manual_stitch():
     match_confidence = 0.3 # match confidence for orb feature matching
@@ -49,31 +52,26 @@ def semi_manual_stitch():
     is_seam_scale_set = False
     is_compose_scale_set = False
 
+    start = time.perf_counter()
     img_names = get_image_names()
+    end = time.perf_counter()
+    print(f"get images time: {end-start}")
     print("done get image names")
 
     # convert images to proper scale
-
+    start = time.perf_counter()
     for name in img_names:
         full_img = cv.imread(cv.samples.findFile(name))
         if full_img is None:
             print("Cannot read image ", name)
         else:
             full_img_sizes.append((full_img.shape[1], full_img.shape[0]))
-            # we konw work_megapix = 0.6
-            # if work_megapix < 0:
-            #     img = full_img
-            #     work_scale = 1
-            #     is_work_scale_set = True
             if is_work_scale_set is False:
                 work_scale = min(1.0, np.sqrt(work_megapix * 1e6 / (full_img.shape[0] * full_img.shape[1])))
                 is_work_scale_set = True
             img = cv.resize(src=full_img, dsize=None, fx=work_scale, fy=work_scale, interpolation=cv.INTER_LINEAR_EXACT)
             if is_seam_scale_set is False:
-                # if megapix > 0:
                 seam_scale = min(1.0, np.sqrt(seam_megapix * 1e6 / (full_img.shape[0] * full_img.shape[1])))
-                # else:
-                #     seam_scale = 1.0
                 seam_work_aspect = seam_scale / work_scale
                 is_seam_scale_set = True
 
@@ -81,9 +79,12 @@ def semi_manual_stitch():
             features.append(img_feat)
             img = cv.resize(src=full_img, dsize=None, fx=seam_scale, fy=seam_scale, interpolation=cv.INTER_LINEAR_EXACT)
             images.append(img)
+    end = time.perf_counter()
+    print(f"load images time: {end-start}")
     print("done loading images")
     
     # match images
+    start = time.perf_counter()
     # might make sense to do this ourselves later on?
     matcher = cv.detail_AffineBestOf2NearestMatcher(False, False, match_confidence)
     p = matcher.apply2(features)
@@ -105,9 +106,11 @@ def semi_manual_stitch():
         print("Need more images")
         exit()
     
+    end = time.perf_counter()
+    print(f"load images time: {end-start}")
     print("done match images")
 
-
+    start = time.perf_counter()
     estimator = cv.detail_AffineBasedEstimator()
     b, cameras = estimator.apply(features, p, None)
     if not b:
@@ -132,9 +135,14 @@ def semi_manual_stitch():
         warped_image_scale = focals[len(focals) // 2]
     else:
         warped_image_scale = (focals[len(focals) // 2] + focals[len(focals) // 2 - 1]) / 2
+    
+    end = time.perf_counter()
+    print(f"estimator time: {end-start}")
 
     print("done estimator")
 
+
+    start = time.perf_counter()
     corners = []
     masks_warped = []
     images_warped = []
@@ -163,23 +171,38 @@ def semi_manual_stitch():
         imgf = img.astype(np.float32)
         images_warped_f.append(imgf)
     
+    end = time.perf_counter()
+    print(f"warper time: {end-start}")
+
     print("done warper")
 
+
+    start = time.perf_counter()
     compensator = cv.detail.ExposureCompensator_createDefault(cv.detail.ExposureCompensator_NO)
     compensator.feed(corners=corners, images=images_warped, masks=masks_warped)
 
+    end = time.perf_counter()
+    print(f"compensator time: {end-start}")
     print("done compensator")
 
+
+    start = time.perf_counter()
     seam_finder = cv.detail_GraphCutSeamFinder('COST_COLOR')
     masks_warped = seam_finder.find(images_warped_f, corners, masks_warped)
+    
+    end = time.perf_counter()
+    print(f"seam finder time: {end-start}")
+    print("done seam finder")
+    
+
+    start = time.perf_counter()
+
     compose_scale = 1
     corners = []
     sizes = []
     blender = None
 
-    print("-"*20)
     for idx, name in enumerate(img_names):
-        print(name)
         full_img = cv.imread(name)
         if not is_compose_scale_set:
             if compose_megapix > 0:
@@ -227,17 +250,30 @@ def semi_manual_stitch():
             blender.prepare(dst_sz)
         
         blender.feed(cv.UMat(image_warped_s), mask_warped, corners[idx])
-
+    
+    end = time.perf_counter()
+    print(f"stitching time: {end-start}")
+    print("done stitching")
 
     # save the image
+    start = time.perf_counter()
     result = None
     result_mask = None
     result, result_mask = blender.blend(result, result_mask)
-    cv.imwrite(result_name, result)
+    cv.imwrite(os.path.join(output_dir, result_name), result)
+    """
     zoom_x = 600.0 / result.shape[1]
     dst = cv.normalize(src=result, dst=None, alpha=255., norm_type=cv.NORM_MINMAX, dtype=cv.CV_8U)
     dst = cv.resize(dst, dsize=None, fx=zoom_x, fy=zoom_x)
     cv.imshow(result_name, dst)
     cv.waitKey()
+    """
+    end = time.perf_counter()
+    print(f"save and blend time: {end-start}")
+
+
 if __name__ == "__main__":
+    start = time.perf_counter()
     semi_manual_stitch()
+    end = time.perf_counter()
+    print(f"total time: {end-start}")
