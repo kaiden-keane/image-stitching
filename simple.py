@@ -35,7 +35,7 @@ if status != cv.Stitcher_OK:
     print("Can't stitch images, error code = %d" % status)
 else:
     outputName = os.path.join(output_dir, output_name)
-    cv.imwrite(outputName, pano)
+    cv.imwrite(os.path.join(output_dir, outputName), pano)
     print("stitching completed successfully. %s saved!" % outputName)
 
 print('Done')
