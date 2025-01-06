@@ -34,7 +34,7 @@ def semi_manual_stitch():
     compose_megapix=-1 # -1 = original resolution
     conf_thresh = 0.3 # threshhold for two images are from teh same panormama confidence is 0
 
-    # match parameters to that of scan
+    # match parameters to that of scan mode of Stitcher
     # wave correction = None
     warp_type = "affine"
     blend_type = "multiband"
@@ -52,14 +52,13 @@ def semi_manual_stitch():
     is_seam_scale_set = False
     is_compose_scale_set = False
 
-    start = time.perf_counter()
+    start = time.time()
     img_names = get_image_names()
-    end = time.perf_counter()
-    print(f"get images time: {end-start}")
-    print("done get image names")
+    end = time.time()
+    print(f"time spent getting image names: {end-start}")
 
     # convert images to proper scale
-    start = time.perf_counter()
+    start = time.time()
     for name in img_names:
         full_img = cv.imread(cv.samples.findFile(name))
         if full_img is None:
@@ -79,12 +78,11 @@ def semi_manual_stitch():
             features.append(img_feat)
             img = cv.resize(src=full_img, dsize=None, fx=seam_scale, fy=seam_scale, interpolation=cv.INTER_LINEAR_EXACT)
             images.append(img)
-    end = time.perf_counter()
-    print(f"load images time: {end-start}")
-    print("done loading images")
+    end = time.time()
+    print(f"time spent loading and rescaling images: {end-start}")
     
     # match images
-    start = time.perf_counter()
+    start = time.time()
     # might make sense to do this ourselves later on?
     matcher = cv.detail_AffineBestOf2NearestMatcher(False, False, match_confidence)
     p = matcher.apply2(features)
@@ -106,11 +104,10 @@ def semi_manual_stitch():
         print("Need more images")
         exit()
     
-    end = time.perf_counter()
-    print(f"load images time: {end-start}")
-    print("done match images")
+    end = time.time()
+    print(f"time spent matching images: {end-start}")
 
-    start = time.perf_counter()
+    start = time.time()
     estimator = cv.detail_AffineBasedEstimator()
     b, cameras = estimator.apply(features, p, None)
     if not b:
@@ -136,13 +133,11 @@ def semi_manual_stitch():
     else:
         warped_image_scale = (focals[len(focals) // 2] + focals[len(focals) // 2 - 1]) / 2
     
-    end = time.perf_counter()
-    print(f"estimator time: {end-start}")
-
-    print("done estimator")
+    end = time.time()
+    print(f"time spent on estimator: {end-start}")
 
 
-    start = time.perf_counter()
+    start = time.time()
     corners = []
     masks_warped = []
     images_warped = []
@@ -171,31 +166,28 @@ def semi_manual_stitch():
         imgf = img.astype(np.float32)
         images_warped_f.append(imgf)
     
-    end = time.perf_counter()
-    print(f"warper time: {end-start}")
-
-    print("done warper")
+    end = time.time()
+    print(f"time spent warping images: {end-start}")
 
 
-    start = time.perf_counter()
+    start = time.time()
     compensator = cv.detail.ExposureCompensator_createDefault(cv.detail.ExposureCompensator_NO)
     compensator.feed(corners=corners, images=images_warped, masks=masks_warped)
 
-    end = time.perf_counter()
-    print(f"compensator time: {end-start}")
-    print("done compensator")
+    # I believe we can get rid of this?
+    end = time.time()
+    print(f"time spent on exposure compensator: {end-start}")
 
 
-    start = time.perf_counter()
+    start = time.time()
     seam_finder = cv.detail_GraphCutSeamFinder('COST_COLOR')
     masks_warped = seam_finder.find(images_warped_f, corners, masks_warped)
     
-    end = time.perf_counter()
-    print(f"seam finder time: {end-start}")
-    print("done seam finder")
+    end = time.time()
+    print(f"time spent on seam finder: {end-start}")
     
 
-    start = time.perf_counter()
+    start = time.time()
 
     compose_scale = 1
     corners = []
@@ -251,29 +243,27 @@ def semi_manual_stitch():
         
         blender.feed(cv.UMat(image_warped_s), mask_warped, corners[idx])
     
-    end = time.perf_counter()
-    print(f"stitching time: {end-start}")
-    print("done stitching")
+    end = time.time()
+    print(f"time spent on stitching: {end-start}")
+
 
     # save the image
-    start = time.perf_counter()
+    start = time.time()
     result = None
     result_mask = None
     result, result_mask = blender.blend(result, result_mask)
-    cv.imwrite(os.path.join(output_dir, result_name), result)
-    """
-    zoom_x = 600.0 / result.shape[1]
-    dst = cv.normalize(src=result, dst=None, alpha=255., norm_type=cv.NORM_MINMAX, dtype=cv.CV_8U)
-    dst = cv.resize(dst, dsize=None, fx=zoom_x, fy=zoom_x)
-    cv.imshow(result_name, dst)
-    cv.waitKey()
-    """
-    end = time.perf_counter()
-    print(f"save and blend time: {end-start}")
 
+    end = time.time()
+    print(f"time spent on blending: {end-start}")
+
+    start = time.time()
+    cv.imwrite(os.path.join(output_dir, result_name), result)
+    
+    end = time.time()
+    print(f"time spent saving image: {end-start}")
 
 if __name__ == "__main__":
-    start = time.perf_counter()
+    start = time.time()
     semi_manual_stitch()
-    end = time.perf_counter()
-    print(f"total time: {end-start}")
+    end = time.time()
+    print(f"program took {end - start} seconds")

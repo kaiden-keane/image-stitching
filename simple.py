@@ -4,48 +4,54 @@ import time
 
 images_dir = "sample_images"
 output_dir = "result_images"
-output_name = "result.png"
+output_name = "simple.png"
 
-def load_cv_imgs():
+def get_image_names():
     # get all file names from sample images directory
     fileNames = os.listdir(images_dir)
-
+    
     # files <= only valid files + full path
     for name in fileNames:
         if not name.endswith(".jpg") and not name.split(".")[0].isdigit():
             fileNames.remove(name)
+    fileNames.sort(key = lambda x: int(x.split(".")[0])) # sort based on numerical order
+
     fileNames = [ os.path.join(images_dir, x) for x in fileNames]
-    
+
+    return fileNames
+
+def main():
+    files = get_image_names()
+
     # load images
     imgs = []
-    for img_name in  fileNames:
-        img = cv.imread(img_name)
+    for img_name in files:
+        img = cv.imread(cv.samples.findFile(img_name))
         if img is None:
-            print("could not read image " + img_name)
-        else:
-            imgs.append(img)
-    return imgs
+            print("can't read image " + img_name)
+        imgs.append(img)
 
-def simple():
-    imgs = load_cv_imgs()
 
-    # stitch images
     stitcher = cv.Stitcher.create(cv.STITCHER_SCANS)
+    stitcher.setPanoConfidenceThresh(0.3)
     status, pano = stitcher.stitch(imgs)
 
     if status != cv.Stitcher_OK:
         print("Can't stitch images, error code = %d" % status)
-    else:
-        outputName = os.path.join(output_dir, output_name)
-        cv.imwrite(os.path.join(output_dir, outputName), pano)
-        print("stitching completed successfully. %s saved!" % outputName)
+
+    
+    
+    output_file = os.path.join(output_dir, output_name)
+    print(output_file)
+
+    cv.imwrite(output_file, pano)
+    print("stitching completed successfully. %s saved!" % output_file)
 
     print('Done')
 
 if __name__ == "__main__":
-    start = time.perf_counter()
+    start = time.time()
+    main()
+    end = time.time()
 
-    simple()
-
-    end = time.perf_counter()
-    print(f"total time = {end - start}")
+    print(f"program took {end - start} seconds")
