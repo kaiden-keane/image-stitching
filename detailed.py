@@ -11,7 +11,7 @@ import time
 
 images_dir = "sample_images"
 output_dir = "result_images"
-output_name = "result.png"
+output_name = "detailed.png"
 
 def get_image_names():
     # get all file names from sample images directory
