@@ -9,13 +9,11 @@ output_name = "result.png"
 def load_cv_imgs():
     # get all file names from sample images directory
     fileNames = os.listdir(images_dir)
-    
+
     # files <= only valid files + full path
     for name in fileNames:
         if not name.endswith(".jpg") and not name.split(".")[0].isdigit():
             fileNames.remove(name)
-    fileNames.sort(key = lambda x: int(x.split(".")[0])) # sort based on numerical order
-
     fileNames = [ os.path.join(images_dir, x) for x in fileNames]
     
     # load images
@@ -28,20 +26,26 @@ def load_cv_imgs():
             imgs.append(img)
     return imgs
 
-start = time.perf_counter()
-imgs = load_cv_imgs()
+def simple():
+    imgs = load_cv_imgs()
 
-# stitch images
-stitcher = cv.Stitcher.create(cv.STITCHER_SCANS)
-status, pano = stitcher.stitch(imgs)
+    # stitch images
+    stitcher = cv.Stitcher.create(cv.STITCHER_SCANS)
+    status, pano = stitcher.stitch(imgs)
 
-if status != cv.Stitcher_OK:
-    print("Can't stitch images, error code = %d" % status)
-else:
-    outputName = os.path.join(output_dir, output_name)
-    cv.imwrite(os.path.join(output_dir, outputName), pano)
-    print("stitching completed successfully. %s saved!" % outputName)
+    if status != cv.Stitcher_OK:
+        print("Can't stitch images, error code = %d" % status)
+    else:
+        outputName = os.path.join(output_dir, output_name)
+        cv.imwrite(os.path.join(output_dir, outputName), pano)
+        print("stitching completed successfully. %s saved!" % outputName)
 
-print('Done')
-end = time.perf_counter()
-print(f"total time = {end - start}")
+    print('Done')
+
+if __name__ == "__main__":
+    start = time.perf_counter()
+
+    simple()
+
+    end = time.perf_counter()
+    print(f"total time = {end - start}")
