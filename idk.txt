@@ -1,0 +1,6 @@
+could try making seam go between the middle of two images to reduce paralax (depends on height of the flight if it is worthi t)
+
+stitching and seam finder take by far the longest
+estimator and saving image comes second
+
+ideally we want a mask for stitching elements of the row together then another for stithcing the rows together

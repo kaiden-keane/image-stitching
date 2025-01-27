@@ -11,7 +11,7 @@ import time
 
 images_dir = "sample_images"
 output_dir = "result_images"
-output_name = "detailed.png"
+output_name = "test.png"
 
 def get_image_names():
     # get all file names from sample images directory
@@ -25,10 +25,9 @@ def get_image_names():
 
     fileNames = [ os.path.join(images_dir, x) for x in fileNames]
 
-    return fileNames
+    return fileNames[:20]
 
-
-def stitch(img_names):
+def semi_manual_stitch():
     match_confidence = 0.3 # match confidence for orb feature matching
     work_megapix=0.6 # == registrationResol
     seam_megapix=0.1 # == seamEstimationResol
@@ -52,6 +51,11 @@ def stitch(img_names):
     is_work_scale_set = False
     is_seam_scale_set = False
     is_compose_scale_set = False
+
+    start = time.time()
+    img_names = get_image_names()
+    end = time.time()
+    print(f"time spent getting image names: {end-start}")
 
     # convert images to proper scale
     start = time.time()
@@ -77,9 +81,9 @@ def stitch(img_names):
     end = time.time()
     print(f"time spent loading and rescaling images: {end-start}")
     
-    # ensure images are here are only images actaully from the same scan
+    # match images
     start = time.time()
-    
+    # might make sense to do this ourselves later on?
     matcher = cv.detail_AffineBestOf2NearestMatcher(False, False, match_confidence)
     p = matcher.apply2(features)
     matcher.collectGarbage()
@@ -101,8 +105,7 @@ def stitch(img_names):
         exit()
     
     end = time.time()
-    print(f"time spent getting correct image subset: {end-start}")
-
+    print(f"time spent matching images: {end-start}")
 
     start = time.time()
     estimator = cv.detail_AffineBasedEstimator()
@@ -193,8 +196,6 @@ def stitch(img_names):
 
     for idx, name in enumerate(img_names):
         full_img = cv.imread(name)
-        
-        # on first iteration set compose_scale
         if not is_compose_scale_set:
             if compose_megapix > 0:
                 compose_scale = min(1.0, np.sqrt(compose_megapix * 1e6 / (full_img.shape[0] * full_img.shape[1])))
@@ -212,17 +213,13 @@ def stitch(img_names):
                 roi = warper.warpRoi(sz, K, cameras[i].R)
                 corners.append(roi[0:2])
                 sizes.append(roi[2:4])
-
         if abs(compose_scale - 1) > 1e-1:
             img = cv.resize(src=full_img, dsize=None, fx=compose_scale, fy=compose_scale,
                             interpolation=cv.INTER_LINEAR_EXACT)
         else:
             img = full_img
-
         K = cameras[idx].K().astype(np.float32)
-
         corner, image_warped = warper.warp(img, K, cameras[idx].R, cv.INTER_LINEAR, cv.BORDER_REFLECT)
-        
         mask = 255 * np.ones((img.shape[0], img.shape[1]), np.uint8)
         p, mask_warped = warper.warp(mask, K, cameras[idx].R, cv.INTER_NEAREST, cv.BORDER_CONSTANT)
         compensator.apply(idx, corners[idx], image_warped, mask_warped)
@@ -230,14 +227,20 @@ def stitch(img_names):
         dilated_mask = cv.dilate(masks_warped[idx], None)
         seam_mask = cv.resize(dilated_mask, (mask_warped.shape[1], mask_warped.shape[0]), 0, 0, cv.INTER_LINEAR_EXACT)
         mask_warped = cv.bitwise_and(seam_mask, mask_warped)
-        
-        # if blender is not created, make it
         if blender is None:
             blender = cv.detail.Blender_createDefault(cv.detail.Blender_NO)
             dst_sz = cv.detail.resultRoi(corners=corners, sizes=sizes)
+            blend_width = np.sqrt(dst_sz[2] * dst_sz[3]) * blend_strength / 100
+            if blend_width < 1:
+                blender = cv.detail.Blender_createDefault(cv.detail.Blender_NO)
+            elif blend_type == "multiband":
+                blender = cv.detail_MultiBandBlender()
+                blender.setNumBands((np.log(blend_width) / np.log(2.) - 1.).astype(np.int32))
+            elif blend_type == "feather":
+                blender = cv.detail_FeatherBlender()
+                blender.setSharpness(1. / blend_width)
             blender.prepare(dst_sz)
         
-        # add the image to be blended
         blender.feed(cv.UMat(image_warped_s), mask_warped, corners[idx])
     
     end = time.time()
@@ -246,7 +249,6 @@ def stitch(img_names):
 
     # save the image
     start = time.time()
-    # blend and return the final pano
     result = None
     result_mask = None
     result, result_mask = blender.blend(result, result_mask)
@@ -260,20 +262,8 @@ def stitch(img_names):
     end = time.time()
     print(f"time spent saving image: {end-start}")
 
-def test():
-    names = get_image_names()
-    times = []
-    for i in range(2, 8):
-        start = time.time()
-        stitch(names[:i])
-        end = time.time()
-        times.append(end - start)
-        print(f"program took {end - start} seconds")
-
-    print(times)
-    for i in range(len(times)-1):
-        print(times[i+1] - times[i])
-
 if __name__ == "__main__":
-    names = get_image_names()
-    stitch(names[:10])
+    start = time.time()
+    semi_manual_stitch()
+    end = time.time()
+    print(f"program took {end - start} seconds")

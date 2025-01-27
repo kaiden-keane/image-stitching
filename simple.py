@@ -21,7 +21,7 @@ def get_image_names():
     return fileNames
 
 def main():
-    files = get_image_names()
+    files = get_image_names()[:20]
 
     # load images
     imgs = []
