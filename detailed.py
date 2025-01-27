@@ -276,4 +276,8 @@ def test():
 
 if __name__ == "__main__":
     names = get_image_names()
+    start = time.time()
     stitch(names[:10])
+    end = time.time()
+    print(f"program took {end - start} seconds")
+

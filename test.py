@@ -25,7 +25,7 @@ def get_image_names():
 
     fileNames = [ os.path.join(images_dir, x) for x in fileNames]
 
-    return fileNames[:20]
+    return fileNames[:10]
 
 def semi_manual_stitch():
     match_confidence = 0.3 # match confidence for orb feature matching
@@ -53,7 +53,7 @@ def semi_manual_stitch():
     is_compose_scale_set = False
 
     start = time.time()
-    img_names = get_image_names()
+    img_names = get_image_names()[:20]
     end = time.time()
     print(f"time spent getting image names: {end-start}")
 

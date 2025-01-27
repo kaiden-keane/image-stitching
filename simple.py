@@ -18,10 +18,10 @@ def get_image_names():
 
     fileNames = [ os.path.join(images_dir, x) for x in fileNames]
 
-    return fileNames
+    return fileNames[:10]
 
 def main():
-    files = get_image_names()[:20]
+    files = get_image_names()
 
     # load images
     imgs = []

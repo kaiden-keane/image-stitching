@@ -1,0 +1,6 @@
+num images: 10
+test.py: 8.7486
+simple.py: 6.932
+detailed.py: 7.872
+
+test.py is an old version of detailed.py before removal of unnecessary parts
