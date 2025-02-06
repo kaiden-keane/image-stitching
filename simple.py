@@ -6,19 +6,22 @@ images_dir = "sample_images"
 output_dir = "result_images"
 output_name = "simple.png"
 
+fileType = "jpg"
+num_imgs = 10
+
 def get_image_names():
     # get all file names from sample images directory
     fileNames = os.listdir(images_dir)
     
     # files <= only valid files + full path
     for name in fileNames:
-        if not name.endswith(".jpg") and not name.split(".")[0].isdigit():
+        if not name.endswith('.' + fileType) and not name.split(".")[0].isdigit():
             fileNames.remove(name)
     fileNames.sort(key = lambda x: int(x.split(".")[0])) # sort based on numerical order
 
     fileNames = [ os.path.join(images_dir, x) for x in fileNames]
 
-    return fileNames[:10]
+    return fileNames[:num_imgs]
 
 def main():
     files = get_image_names()

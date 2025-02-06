@@ -1,0 +1,17 @@
+could try making seam go between the middle of two images to reduce paralax (depends on height of the flight if it is worthi t)
+
+stitching and seam finder take by far the longest
+estimator and saving image comes second
+
+ideally we want a mask for stitching elements of the row together then another for stithcing the rows together
+
+new requirements:
+- better memory management. The algorithm will be run on raspberry pi with ~4gb; want to only use ~1 or 2 tops
+- efficiency: we want to get close to the original simply.py in time take, it is currently around 1 second slower
+
+areas for improvement: timewise, sithcing and seam finding take the majority of time.
+stitching:
+- first we should try to seperate blending from putting the images together, we can then store the key points only until we dont need them anymore (by the time we get to the next row).
+- 
+seam finding:
+- the only thngs we do is initliaze a openCV seam_finder (GraphCut(COST_COLOR) and we also get msaks warped from calling seam_finder.find 

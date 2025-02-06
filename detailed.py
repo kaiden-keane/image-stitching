@@ -12,6 +12,8 @@ import time
 images_dir = "sample_images"
 output_dir = "result_images"
 output_name = "detailed.png"
+filetype = "jpg"
+num_imgs = 10
 
 def get_image_names():
     # get all file names from sample images directory
@@ -19,7 +21,7 @@ def get_image_names():
     
     # files <= only valid files + full path
     for name in fileNames:
-        if not name.endswith(".jpg") and not name.split(".")[0].isdigit():
+        if not name.endswith('.' + filetype) and not name.split(".")[0].isdigit():
             fileNames.remove(name)
     fileNames.sort(key = lambda x: int(x.split(".")[0])) # sort based on numerical order
 
@@ -79,8 +81,7 @@ def stitch(img_names):
     
     # ensure images are here are only images actaully from the same scan
     start = time.time()
-    
-    matcher = cv.detail_AffineBestOf2NearestMatcher(False, False, match_confidence)
+    matcher = cv.detail.AffineBestOf2NearestMatcher(False, False, match_confidence)
     p = matcher.apply2(features)
     matcher.collectGarbage()
 
@@ -105,7 +106,7 @@ def stitch(img_names):
 
 
     start = time.time()
-    estimator = cv.detail_AffineBasedEstimator()
+    estimator = cv.detail.AffineBasedEstimator()
     b, cameras = estimator.apply(features, p, None)
     if not b:
         print("Homography estimation failed.")
@@ -113,7 +114,7 @@ def stitch(img_names):
     for cam in cameras:
         cam.R = cam.R.astype(np.float32)
 
-    adjuster = cv.detail_BundleAdjusterAffinePartial()
+    adjuster = cv.detail.BundleAdjusterAffinePartial()
     adjuster.setConfThresh(conf_thresh)
     adjuster.setRefinementMask(np.ones((3, 3), np.uint8)) # == ba_refine_mask == xxxxx
     b, cameras = adjuster.apply(features, p, cameras)
@@ -168,7 +169,7 @@ def stitch(img_names):
 
 
     start = time.time()
-    compensator = cv.detail.ExposureCompensator_createDefault(cv.detail.ExposureCompensator_NO)
+    compensator = cv.detail.ExposureCompensator.createDefault(cv.detail.ExposureCompensator_NO)
     compensator.feed(corners=corners, images=images_warped, masks=masks_warped)
 
     # I believe we can get rid of this?
@@ -177,7 +178,7 @@ def stitch(img_names):
 
 
     start = time.time()
-    seam_finder = cv.detail_GraphCutSeamFinder('COST_COLOR')
+    seam_finder = cv.detail.GraphCutSeamFinder('COST_COLOR')
     masks_warped = seam_finder.find(images_warped_f, corners, masks_warped)
     
     end = time.time()
@@ -233,7 +234,7 @@ def stitch(img_names):
         
         # if blender is not created, make it
         if blender is None:
-            blender = cv.detail.Blender_createDefault(cv.detail.Blender_NO)
+            blender = cv.detail.Blender.createDefault(cv.detail.Blender_NO)
             dst_sz = cv.detail.resultRoi(corners=corners, sizes=sizes)
             blender.prepare(dst_sz)
         
@@ -277,7 +278,7 @@ def test():
 if __name__ == "__main__":
     names = get_image_names()
     start = time.time()
-    stitch(names[:10])
+    stitch(names[:num_imgs])
     end = time.time()
     print(f"program took {end - start} seconds")
 
