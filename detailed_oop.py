@@ -11,7 +11,7 @@ import time
 
 images_dir = "sample_images"
 output_dir = "result_images"
-output_name = "detailed.png"
+output_name = "detailed_oop.png"
 
 def get_image_names():
     # get all file names from sample images directory
@@ -29,21 +29,28 @@ def get_image_names():
 
 
 class Stitcher():
+    match_confidence = 0.3 # match confidence for orb feature matching
+    work_megapix= 0.6 # == registrationResol
+    seam_megapix= 0.1 # == seamEstimationResol
+    
+    # we likely dont want full resolution in the end so make compose_megapix different than original
+    compose_megapix = 1 # -1 = original resolution
+    conf_thresh = 0.3 # threshhold for two images are from the same panormama confidence is 0
+
+    warp_type = "affine"
+    result_name = output_name
+    seam_work_aspect = 0.5
+    
     def __init__(self):
-        self.match_confidence = 0.3 # match confidence for orb feature matching
-        self.work_megapix=0.6 # == registrationResol
-        self.seam_megapix=0.1 # == seamEstimationResol
-        self.compose_megapix=-1 # -1 = original resolution
-        self.conf_thresh = 0.3 # threshhold for two images are from the same panormama confidence is 0
-
-        # match parameters to that of scan mode of Stitcher
-        self.warp_type = "affine"
-        self.blend_type = "multiband"
-        self.blend_strength = 5
-        self.result_name = output_name
-        self.seam_work_aspect = 1
-
+        cv.xfeatures
         self.feature_detector = cv.ORB.create()
+        self.matcher = cv.detail.AffineBestOf2NearestMatcher(False, True, self.match_confidence)
+
+    def __registerImages():
+        pass
+
+    def __composeImages():
+        pass
 
 
     def stitch(self, img_names):
@@ -56,36 +63,41 @@ class Stitcher():
         is_seam_scale_set = False
         is_compose_scale_set = False
 
-        # convert images to proper scale
+        # load and convert images to proper scale
         start = time.time()
-        for name in img_names:
-            full_img = cv.imread(cv.samples.findFile(name))
+        for i, name in enumerate(img_names):
+            full_img = cv.imread(name)
             if full_img is None:
                 print("Cannot read image ", name)
             else:
                 full_img_sizes.append((full_img.shape[1], full_img.shape[0]))
+                
                 if is_work_scale_set is False:
                     work_scale = min(1.0, np.sqrt(self.work_megapix * 1e6 / (full_img.shape[0] * full_img.shape[1])))
                     is_work_scale_set = True
                 img = cv.resize(src=full_img, dsize=None, fx=work_scale, fy=work_scale, interpolation=cv.INTER_LINEAR_EXACT)
+                
                 if is_seam_scale_set is False:
                     seam_scale = min(1.0, np.sqrt(self.seam_megapix * 1e6 / (full_img.shape[0] * full_img.shape[1])))
                     seam_work_aspect = seam_scale / work_scale
                     is_seam_scale_set = True
 
+                # compute features
+                # img_feat = self.feature_detector.detectAndCompute(img, cv.UMat(255 * np.ones((img.shape[0], img.shape[1]), np.uint8)))
+
                 img_feat = cv.detail.computeImageFeatures2(self.feature_detector, img)
                 features.append(img_feat)
                 img = cv.resize(src=full_img, dsize=None, fx=seam_scale, fy=seam_scale, interpolation=cv.INTER_LINEAR_EXACT)
                 images.append(img)
+
         end = time.time()
-        print(f"time spent loading and rescaling images: {end-start}")
+        print(f"time spent loading, rescaling, getting features for images: {end-start}")
         
         # ensure images are here are only images actaully from the same scan
         start = time.time()
         
-        matcher = cv.detail_AffineBestOf2NearestMatcher(False, False, self.match_confidence)
-        p = matcher.apply2(features)
-        matcher.collectGarbage()
+        p = self.matcher.apply2(features)
+        self.matcher.collectGarbage()
 
         indices = cv.detail.leaveBiggestComponent(features, p, self.conf_thresh)
         img_subset = []
@@ -108,7 +120,7 @@ class Stitcher():
 
 
         start = time.time()
-        estimator = cv.detail_AffineBasedEstimator()
+        estimator = cv.detail.AffineBasedEstimator()
         b, cameras = estimator.apply(features, p, None)
         if not b:
             print("Homography estimation failed.")
@@ -116,7 +128,7 @@ class Stitcher():
         for cam in cameras:
             cam.R = cam.R.astype(np.float32)
 
-        adjuster = cv.detail_BundleAdjusterAffinePartial()
+        adjuster = cv.detail.BundleAdjusterAffinePartial()
         adjuster.setConfThresh(self.conf_thresh)
         adjuster.setRefinementMask(np.ones((3, 3), np.uint8)) # == ba_refine_mask == xxxxx
         b, cameras = adjuster.apply(features, p, cameras)
@@ -171,7 +183,7 @@ class Stitcher():
 
 
         start = time.time()
-        compensator = cv.detail.ExposureCompensator_createDefault(cv.detail.ExposureCompensator_NO)
+        compensator = cv.detail.ExposureCompensator.createDefault(cv.detail.ExposureCompensator_NO)
         compensator.feed(corners=corners, images=images_warped, masks=masks_warped)
 
         # I believe we can get rid of this?
@@ -180,7 +192,7 @@ class Stitcher():
 
 
         start = time.time()
-        seam_finder = cv.detail_GraphCutSeamFinder('COST_COLOR')
+        seam_finder = cv.detail.GraphCutSeamFinder('COST_COLOR')
         masks_warped = seam_finder.find(images_warped_f, corners, masks_warped)
         
         end = time.time()
@@ -236,7 +248,7 @@ class Stitcher():
             
             # if blender is not created, make it
             if blender is None:
-                blender = cv.detail.Blender_createDefault(cv.detail.Blender_NO)
+                blender = cv.detail.Blender.createDefault(cv.detail.Blender_NO)
                 dst_sz = cv.detail.resultRoi(corners=corners, sizes=sizes)
                 blender.prepare(dst_sz)
             
@@ -263,26 +275,12 @@ class Stitcher():
         end = time.time()
         print(f"time spent saving image: {end-start}")
 
-def test(stitcher: Stitcher):
-    names = get_image_names()
-    times = []
-    for i in range(2, 8):
-        stitcher = Stitcher()
-        start = time.time()
-        stitcher.stitch(names[:i])
-        end = time.time()
-        times.append(end - start)
-        print(f"program took {end - start} seconds")
-
-    print(times)
-    for i in range(len(times)-1):
-        print(times[i+1] - times[i])
 
 if __name__ == "__main__":
     stitcher = Stitcher()
     names = get_image_names()
     start = time.time()
-    stitcher.stitch(names[:10])
+    stitcher.stitch(names[:15])
     end = time.time()
     print(f"program took {end - start} seconds")
 

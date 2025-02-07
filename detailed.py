@@ -13,7 +13,7 @@ images_dir = "sample_images"
 output_dir = "result_images"
 output_name = "detailed.png"
 filetype = "jpg"
-num_imgs = 10
+num_imgs = 15
 
 def get_image_names():
     # get all file names from sample images directory
@@ -40,8 +40,6 @@ def stitch(img_names):
     # match parameters to that of scan mode of Stitcher
     # wave correction = None
     warp_type = "affine"
-    blend_type = "multiband"
-    blend_strength = 5
     result_name = output_name
     finder = cv.ORB.create()
 
@@ -55,10 +53,10 @@ def stitch(img_names):
     is_seam_scale_set = False
     is_compose_scale_set = False
 
-    # convert images to proper scale
+    # load and convert images to proper scale
     start = time.time()
     for name in img_names:
-        full_img = cv.imread(cv.samples.findFile(name))
+        full_img = cv.imread(name)
         if full_img is None:
             print("Cannot read image ", name)
         else:
@@ -261,19 +259,8 @@ def stitch(img_names):
     end = time.time()
     print(f"time spent saving image: {end-start}")
 
-def test():
-    names = get_image_names()
-    times = []
-    for i in range(2, 8):
-        start = time.time()
-        stitch(names[:i])
-        end = time.time()
-        times.append(end - start)
-        print(f"program took {end - start} seconds")
 
-    print(times)
-    for i in range(len(times)-1):
-        print(times[i+1] - times[i])
+
 
 if __name__ == "__main__":
     names = get_image_names()

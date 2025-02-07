@@ -7,7 +7,7 @@ output_dir = "result_images"
 output_name = "simple.png"
 
 fileType = "jpg"
-num_imgs = 10
+num_imgs = 15
 
 def get_image_names():
     # get all file names from sample images directory

@@ -2,6 +2,7 @@ import cv2 as cv
 import numpy as np
 import math
 import os
+import time
 
 
 images_directory = "sample_images"
@@ -158,10 +159,11 @@ def stitch_images(images):
 
 
 if __name__ == "__main__":
-    orb = cv.ORB_create()
+    start = time.time()
+    orb = cv.ORB.create()
     files = sorted(
         [f for f in os.listdir(images_directory) if f.endswith('.' + filetype)])
-    files = files[:10]
+    files = files[:15]
 
     images = []
     previous = BaseImage.load_from_file(os.path.join(images_directory, files[0]))
@@ -180,3 +182,5 @@ if __name__ == "__main__":
     stitched_image = stitch_images(images)
     resized = cv.resize(stitched_image, (0, 0), fx = 0.1, fy = 0.1)
     cv.imwrite(os.path.join(output_dir, output_name), resized)
+    end = time.time()
+    print(f"program took {end - start} seconds")
