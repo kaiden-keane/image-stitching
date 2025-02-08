@@ -34,7 +34,7 @@ class Stitcher():
     seam_megapix= 0.1 # == seamEstimationResol
     
     # we likely dont want full resolution in the end so make compose_megapix different than original
-    compose_megapix = 1 # -1 = original resolution
+    compose_megapix = -1 # -1 = original resolution
     conf_thresh = 0.3 # threshhold for two images are from the same panormama confidence is 0
 
     warp_type = "affine"
@@ -42,7 +42,6 @@ class Stitcher():
     seam_work_aspect = 0.5
     
     def __init__(self):
-        cv.xfeatures
         self.feature_detector = cv.ORB.create()
         self.matcher = cv.detail.AffineBestOf2NearestMatcher(False, True, self.match_confidence)
 
@@ -83,8 +82,6 @@ class Stitcher():
                     is_seam_scale_set = True
 
                 # compute features
-                # img_feat = self.feature_detector.detectAndCompute(img, cv.UMat(255 * np.ones((img.shape[0], img.shape[1]), np.uint8)))
-
                 img_feat = cv.detail.computeImageFeatures2(self.feature_detector, img)
                 features.append(img_feat)
                 img = cv.resize(src=full_img, dsize=None, fx=seam_scale, fy=seam_scale, interpolation=cv.INTER_LINEAR_EXACT)
