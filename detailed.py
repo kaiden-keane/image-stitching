@@ -10,7 +10,7 @@ import time
 
 
 images_dir = "sample_images"
-output_dir = "result_images"
+output_dir = "presentation"
 output_name = "detailed.png"
 filetype = "jpg"
 num_imgs = 15

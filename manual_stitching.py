@@ -6,7 +6,7 @@ import time
 
 
 images_directory = "sample_images"
-output_dir = "result_images"
+output_dir = "presentation"
 output_name = "manual.png"
 filetype = "jpg"
 
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     orb = cv.ORB.create()
     files = sorted(
         [f for f in os.listdir(images_directory) if f.endswith('.' + filetype)])
-    files = files[:15]
+    files = files[:10]
 
     images = []
     previous = BaseImage.load_from_file(os.path.join(images_directory, files[0]))

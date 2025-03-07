@@ -3,7 +3,7 @@ import os
 import time
 
 images_dir = "sample_images"
-output_dir = "result_images"
+output_dir = "presentation"
 output_name = "simple.png"
 
 fileType = "jpg"

@@ -2,24 +2,22 @@ import cv2 as cv
 import numpy as np
 import os
 import time
+import argparse
 
 #----------------------------------------------------------
 # based on stitching_detailed found below:
 # https://docs.opencv.org/4.x/d8/d19/tutorial_stitcher.html
 #----------------------------------------------------------
 
+file_type = "jpg"
 
-images_dir = "sample_images"
-output_dir = "result_images"
-output_name = "detailed_oop.png"
-
-def get_image_names():
+def get_image_names(images_dir):
     # get all file names from sample images directory
     fileNames = os.listdir(images_dir)
     
     # files <= only valid files + full path
     for name in fileNames:
-        if not name.endswith(".jpg") and not name.split(".")[0].isdigit():
+        if not name.endswith("." + file_type) and not name.split(".")[0].isdigit():
             fileNames.remove(name)
     fileNames.sort(key = lambda x: int(x.split(".")[0])) # sort based on numerical order
 
@@ -38,12 +36,12 @@ class Stitcher():
     conf_thresh = 0.3 # threshhold for two images are from the same panormama confidence is 0
 
     warp_type = "affine"
-    result_name = output_name
     seam_work_aspect = 0.5
     
-    def __init__(self):
+    def __init__(self, output_name):
         self.feature_detector = cv.ORB.create()
         self.matcher = cv.detail.AffineBestOf2NearestMatcher(False, True, self.match_confidence)
+        self.output_name = output_name
 
     def __registerImages():
         pass
@@ -92,7 +90,7 @@ class Stitcher():
         
         # ensure images are here are only images actaully from the same scan
         start = time.time()
-        
+        print(len(features))
         p = self.matcher.apply2(features)
         self.matcher.collectGarbage()
 
@@ -267,17 +265,25 @@ class Stitcher():
         print(f"time spent on blending: {end-start}")
 
         start = time.time()
-        cv.imwrite(os.path.join(output_dir, self.result_name), result)
+        cv.imwrite(self.output_name, result)
         
         end = time.time()
         print(f"time spent saving image: {end-start}")
 
 
 if __name__ == "__main__":
-    stitcher = Stitcher()
-    names = get_image_names()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filename')
+    args = parser.parse_args()
+
+    images_dir = args.filename
+    output_name = f"out_{args.filename}.png"
+    output_dir = "presentation"
+    
+    stitcher = Stitcher(os.path.join(output_dir, output_name))
+    names = get_image_names(images_dir)[:15]
     start = time.time()
-    stitcher.stitch(names[:15])
+    stitcher.stitch(names)
     end = time.time()
     print(f"program took {end - start} seconds")
 

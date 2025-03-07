@@ -8,17 +8,17 @@ import os
 import time
 
 images_dir = "sample_images"
-output_dir = "result_images"
+output_dir = "presentation"
 output_name = "simple_sequential.png"
 fileType = "jpg"
-num_imgs = 10
+num_imgs = 15
 
 outputName = os.path.join(output_dir, output_name)
 
 
 def load_cv_imgs():
     # get all file names from sample images directory
-    fileNames = os.listdir(images_dir)
+    fileNames = os.listdir(images_dir)[:3]
     # files <= only valid files + full path
     for name in fileNames:
         if not name.endswith('.' + fileType) and not name.split(".")[0].isdigit():
