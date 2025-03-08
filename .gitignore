@@ -1,4 +1,5 @@
 .DS_Store
 result_images/*
+results/*
 sample_images/*
 .venv/
