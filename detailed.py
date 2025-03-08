@@ -37,11 +37,13 @@ def stitch(img_names):
 
     # -1 = original resolution, can set this lower if we do not need full scale resolution
     compose_megapix=-1
-    conf_thresh = 0.3 # threshhold for two images are from teh same panormama confidence is 0
+    # threshhold for two images are from the same panormama confidence is 0
+    conf_thresh = 0.3 
 
     warp_type = "affine" # 6 DOF
+
     result_name = output_name
-    finder = cv.ORB.create()
+    featureFinder = cv.ORB.create()
 
 
 
@@ -70,7 +72,7 @@ def stitch(img_names):
                 seam_work_aspect = seam_scale / work_scale
                 is_seam_scale_set = True
 
-            img_feat = cv.detail.computeImageFeatures2(finder, img)
+            img_feat = cv.detail.computeImageFeatures2(featureFinder, img)
             features.append(img_feat)
             img = cv.resize(src=full_img, dsize=None, fx=seam_scale, fy=seam_scale, interpolation=cv.INTER_LINEAR_EXACT)
             images.append(img)
