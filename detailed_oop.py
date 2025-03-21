@@ -10,6 +10,9 @@ import argparse
 #----------------------------------------------------------
 
 file_type = "jpg"
+images_dir = "sample_images"
+output_name = "detailed.png"
+output_dir = "results"
 
 def get_image_names(images_dir):
     # get all file names from sample images directory
@@ -265,6 +268,7 @@ class Stitcher():
         print(f"time spent on blending: {end-start}")
 
         start = time.time()
+        print("writing output to " + self.output_name)
         cv.imwrite(self.output_name, result)
         
         end = time.time()
@@ -272,16 +276,8 @@ class Stitcher():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filename')
-    args = parser.parse_args()
-
-    images_dir = args.filename
-    output_name = f"out_{args.filename}.png"
-    output_dir = "presentation"
-    
     stitcher = Stitcher(os.path.join(output_dir, output_name))
-    names = get_image_names(images_dir)[:15]
+    names = get_image_names(images_dir)
     start = time.time()
     stitcher.stitch(names)
     end = time.time()

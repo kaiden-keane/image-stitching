@@ -13,7 +13,6 @@ images_dir = "sample_images"
 output_dir = "presentation"
 output_name = "detailed.png"
 filetype = "jpg"
-num_imgs = 15
 
 def get_image_names():
     # get all file names from sample images directory
@@ -32,16 +31,19 @@ def get_image_names():
 
 def stitch(img_names):
     match_confidence = 0.3 # match confidence for orb feature matching
-    work_megapix=0.6 # == registrationResol
-    seam_megapix=0.1 # == seamEstimationResol
-    compose_megapix=-1 # -1 = original resolution
-    conf_thresh = 0.3 # threshhold for two images are from teh same panormama confidence is 0
+    
+    work_megapix=0.6 # == registration resolution (feature finding)
+    seam_megapix=0.1 # == seam estimation resolution
 
-    # match parameters to that of scan mode of Stitcher
-    # wave correction = None
-    warp_type = "affine"
+    # -1 = original resolution, can set this lower if we do not need full scale resolution
+    compose_megapix=-1
+    # threshhold for two images are from the same panormama confidence is 0
+    conf_thresh = 0.3 
+
+    warp_type = "affine" # 6 DOF
+
     result_name = output_name
-    finder = cv.ORB.create()
+    featureFinder = cv.ORB.create()
 
 
 
@@ -70,7 +72,7 @@ def stitch(img_names):
                 seam_work_aspect = seam_scale / work_scale
                 is_seam_scale_set = True
 
-            img_feat = cv.detail.computeImageFeatures2(finder, img)
+            img_feat = cv.detail.computeImageFeatures2(featureFinder, img)
             features.append(img_feat)
             img = cv.resize(src=full_img, dsize=None, fx=seam_scale, fy=seam_scale, interpolation=cv.INTER_LINEAR_EXACT)
             images.append(img)
@@ -265,6 +267,7 @@ def stitch(img_names):
 if __name__ == "__main__":
     names = get_image_names()
     start = time.time()
+    num_imgs = 10
     stitch(names[:num_imgs])
     end = time.time()
     print(f"program took {end - start} seconds")
