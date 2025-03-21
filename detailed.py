@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 import os
+import sys
 import time
 
 #----------------------------------------------------------
@@ -10,8 +11,9 @@ import time
 
 
 images_dir = "sample_images"
-output_dir = "presentation"
+output_dir = "results"
 output_name = "detailed.png"
+num_imgs = 20
 filetype = "jpg"
 
 def get_image_names():
@@ -267,7 +269,6 @@ def stitch(img_names):
 if __name__ == "__main__":
     names = get_image_names()
     start = time.time()
-    num_imgs = 10
     stitch(names[:num_imgs])
     end = time.time()
     print(f"program took {end - start} seconds")
